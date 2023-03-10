@@ -6,14 +6,24 @@ class GraphColoringCSP:
         self.graph = graph
         self.num_colors = num_colors
         
+    # def is_valid_color(self, vertex, color, color_map):
+    #     # print('is_valid_color', vertex, color, color_map)
+    #     # print('color_map.get(neighbor)', color_map)
+
+    #     for neighbor in self.graph[vertex]:
+    #         # print('neighbor', neighbor)
+    #         # print('color_map.get(neighbor)', neighbor, color_map.get(neighbor))
+
+    #         if color_map.get(neighbor) == color:
+    #             return False
+    #     return True
+    
     def is_valid_color(self, vertex, color, color_map):
-        print('is_valid_color', vertex, color, color_map)
         for neighbor in self.graph[vertex]:
-            print('neighbor', neighbor)
-            if color_map.get(neighbor) == color:
+            if neighbor in color_map and color_map[neighbor] == color:
                 return False
         return True
-    
+
     def get_unassigned_var(self, color_map):
         for vertex in self.graph:
             if vertex not in color_map:
@@ -37,11 +47,11 @@ class GraphColoringCSP:
     def ac3(self, queue=None):
         if queue is None:
             queue = deque((i, j) for i in self.graph for j in self.graph[i])
-        print('==queue', queue)
+        # print('==queue', queue)
         while queue:
             i, j = queue.popleft()
             # print('inside while', i,j, self.removeInconsistentValues(i, j))
-            if self.removeInconsistentValues(i, j):
+            if self.revise(i, j):
                 # print('inside')
                 if not self.graph[i]:
                     return False
@@ -50,6 +60,19 @@ class GraphColoringCSP:
                         queue.append((k, i))
         return True
     
+    # ~~~~~~~
+    def revise(self, xi, xj):
+        revised = False
+        for x in self.domain[xi]:
+            if not any(self.constraints(xi, x, xj, y) for y in self.domain[xj]):
+                self.domain[xi].remove(x)
+                revised = True
+        return revised
+    
+    def constraints(xi, x, xj, y):
+        return x != y and (xi, xj) in graph
+    # ~~~~~~~
+
     def removeInconsistentValues(self, i, j):
         removed = False
         print(f"===> Before: {i}: {self.domain[i]}, {j}: {self.domain[j]}")
@@ -67,8 +90,8 @@ class GraphColoringCSP:
     def backtrack(self, color_map):
         if len(color_map) == len(self.graph):
             return color_map
+        print('var', color_map)
         var = self.get_unassigned_var(color_map)
-        # print('var', self.domain)
 
         for value in self.get_ordered_domain_values(var, color_map):
             # print('backtrack', value)
@@ -130,5 +153,5 @@ csp = GraphColoringCSP(graph, num_colors=colors)
 color_map = csp.solve()
 
 # print the result
-for node, color in color_map.items():
-    print(f"{node} and this node color is: {color}")
+# for node, color in color_map.items():
+#     print(f"{node} and this node color is: {color}")
