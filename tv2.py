@@ -7,9 +7,7 @@ class GraphColoringCSP:
         self.num_colors = num_colors
         
     def is_valid_color(self, vertex, color, color_map):
-        print('is_valid_color', vertex, color, color_map)
         for neighbor in self.graph[vertex]:
-            print('neighbor', neighbor)
             if color_map.get(neighbor) == color:
                 return False
         return True
@@ -37,41 +35,33 @@ class GraphColoringCSP:
     def ac3(self, queue=None):
         if queue is None:
             queue = deque((i, j) for i in self.graph for j in self.graph[i])
-        print('==queue', queue)
         while queue:
             i, j = queue.popleft()
-            # print('inside while', i,j, self.removeInconsistentValues(i, j))
-            if self.removeInconsistentValues(i, j):
-                # print('inside')
-                if not self.graph[i]:
+            if self.revise(i, j):
+                if not self.domain[i]:
                     return False
                 for k in self.graph[i]:
                     if k != j:
                         queue.append((k, i))
         return True
     
-    def removeInconsistentValues(self, i, j):
-        removed = False
+    def revise(self, i, j):
+        revised = False
         print(f"===> Before: {i}: {self.domain[i]}, {j}: {self.domain[j]}")
 
-        for x in list(self.domain[i]):
-            if not any(self.is_valid_color(j, y, {i: x}) for y in self.domain[j]):
-                self.domain[i].remove(x)
-                removed = True
-        
-        # print('removed', removed)
-        print(f"===> After:  {i}: {self.domain[i]}, {j}: {self.domain[j]}\n")
+        for ci in list(self.domain[i]):
+            if not any(self.is_valid_color(j, cj, {i: ci}) for cj in self.domain[j]):
+                self.domain[i].remove(ci)
+                revised = True
 
-        return removed
+        print(f"===> After:  {i}: {self.domain[i]}, {j}: {self.domain[j]}\n")
+        return revised
     
     def backtrack(self, color_map):
         if len(color_map) == len(self.graph):
             return color_map
         var = self.get_unassigned_var(color_map)
-        # print('var', self.domain)
-
         for value in self.get_ordered_domain_values(var, color_map):
-            # print('backtrack', value)
             if self.is_valid_color(var, value, color_map):
                 color_map[var] = value
                 inferences = self.inference(var, value, color_map)
@@ -89,10 +79,7 @@ class GraphColoringCSP:
             if neighbor not in color_map:
                 for color in self.domain[neighbor].copy():
                     if not self.is_valid_color(neighbor, color, {var: value, neighbor: color}):
-                        # print('before removed some color', self.domain[neighbor], color)
                         self.domain[neighbor].remove(color)
-                        # print('after removed some color', self.domain[neighbor])
-
                         inferences.append((neighbor, color))
                 if not self.domain[neighbor]:
                     return None
@@ -104,13 +91,10 @@ class GraphColoringCSP:
             
     def solve(self):
         self.domain = {v: set(range(self.num_colors)) for v in self.graph}
-        print('domain before', self.graph)
         self.ac3()
-        # print('domain after ', self.graph)
-
-        # color_map = self.backtrack({})
-        # return color_map
-
+        color_map = self.backtrack({})
+        return color_map
+        
 # create a graph
 graph = {
     1: {3},

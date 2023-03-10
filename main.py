@@ -49,3 +49,12 @@ def processFile():
     print('color_map', color_map)
 
 processFile()
+
+
+
+# use this
+def check_valid(graph):
+    for node,nexts in graph.items():
+        assert(node not in nexts) # # no node linked to itself
+        for next in nexts:
+            assert(next in graph and node in graph[next]) # A linked to B implies B linked to A
