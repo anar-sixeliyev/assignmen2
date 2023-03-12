@@ -1,16 +1,16 @@
-from main import GraphColoringCSP
+from backup import GraphColoringCSP
 
 import unittest
 
 
 class GraphColoringCSPTestCase(unittest.TestCase):
 
-    # def test_graph_validity(self):
-    #     # Test that the constructor raises an error if the graph is invalid
-    #     graph = {1: {2, 3}, 2: {1, 3}, 3: {1, 2}, 4: {5}, 5: {4}}
-    #     num_colors = 3
-    #     with self.assertRaises(ValueError):
-    #         GraphColoringCSP(graph, num_colors)
+    def test_graph_validity(self):
+        # Test that the constructor raises an error if the graph is invalid
+        graph = {1: {2, 3}, 2: {1, 3}, 3: {1, 2}, 4: {5}, 5: {4}}
+        num_colors = 3
+        with self.assertRaises(ValueError):
+            GraphColoringCSP(graph, num_colors)
 
     def test_MRVgetUnassignedArea(self):
         # Test the MRVgetUnassignedArea method
@@ -50,28 +50,28 @@ class GraphColoringCSPTestCase(unittest.TestCase):
         result = csp.isValidColor(4, 0, color_map)
         self.assertTrue(result)
 
-    # def test_AC3(self):
-    #     # Test the AC3 method
-    #     graph = {1: {2, 3}, 2: {1, 3}, 3: {1, 2}, 4: {5}, 5: {4}}
-    #     num_colors = 3
-    #     csp = GraphColoringCSP(graph, num_colors)
-    #     csp.domain = {1: {0, 1, 2}, 2: {0, 1, 2}, 3: {0, 1}, 4: {0, 1, 2}, 5: {0, 1, 2}}
-    #     csp.AC3()
-    #     self.assertEqual(csp.domain[1], {2})
-    #     self.assertEqual(csp.domain[2], {2})
-    #     self.assertEqual(csp.domain[3], {1})
-    #     self.assertEqual(csp.domain[4], {2})
-    #     self.assertEqual(csp.domain[5], {0, 1, 2})
+    def test_AC3(self):
+        # Test the AC3 method
+        graph = {1: {2, 3}, 2: {1, 3}, 3: {1, 2}, 4: {5}, 5: {4}}
+        num_colors = 3
+        csp = GraphColoringCSP(graph, num_colors)
+        csp.domain = {1: {0, 1, 2}, 2: {0, 1, 2}, 3: {0, 1}, 4: {0, 1, 2}, 5: {0, 1, 2}}
+        csp.AC3()
+        self.assertEqual(csp.domain[1], {2})
+        self.assertEqual(csp.domain[2], {2})
+        self.assertEqual(csp.domain[3], {1})
+        self.assertEqual(csp.domain[4], {2})
+        self.assertEqual(csp.domain[5], {0, 1, 2})
 
-    # def test_removeInconsistentValues(self):
-    #     # Test the removeInconsistentValues method
-    #     graph = {1: {2, 3}, 2: {1, 3}, 3: {1, 2}, 4: {5}, 5: {4}}
-    #     num_colors = 3
-    #     csp = GraphColoringCSP(graph, num_colors)
-    #     csp.domain = {1: {0, 1, 2}, 2: {0, 1, 2}, 3: {0, 1}, 4: {0, 1, 2}, 5: {0, 1, 2}}
-    #     removed = csp.revise(1, 2)
-    #     self.assertTrue(removed)
-    #     self.assertEqual(csp.domain[1], {1, 2})
+    def test_removeInconsistentValues(self):
+        # Test the removeInconsistentValues method
+        graph = {1: {2, 3}, 2: {1, 3}, 3: {1, 2}, 4: {5}, 5: {4}}
+        num_colors = 3
+        csp = GraphColoringCSP(graph, num_colors)
+        csp.domain = {1: {0, 1, 2}, 2: {0, 1, 2}, 3: {0, 1}, 4: {0, 1, 2}, 5: {0, 1, 2}}
+        removed = csp.revise(1, 2)
+        self.assertTrue(removed)
+        self.assertEqual(csp.domain[1], {1, 2})
        
 class TestBackTrackAlgorithm(unittest.TestCase):
     def setUp(self):

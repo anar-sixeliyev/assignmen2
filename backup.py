@@ -69,34 +69,34 @@ class GraphColoringCSP:
                 return False
         return True
         
-    # def AC3(self, queue=None):
-    #     if queue is None:
-    #         queue = Queue()
-    #         for Xi in self.graph:
-    #             for Xj in self.graph:
-    #                 if Xj != Xi:
-    #                     queue.put((Xi, Xj))
+    def AC3(self, queue=None):
+        if queue is None:
+            queue = Queue()
+            for Xi in self.graph:
+                for Xj in self.graph:
+                    if Xj != Xi:
+                        queue.put((Xi, Xj))
 
-    #     while not queue.empty():
-    #         (Xi, Xj) = queue.get()
-    #         if self.revise(Xi, Xj):
-    #             if len(self.graph[Xi]) == 0:
-    #                 return False
-    #             for Xk in self.graph:
-    #                 if Xk != Xi and Xk != Xj:
-    #                     queue.put((Xk, Xi))
-    #     return True
+        while not queue.empty():
+            (Xi, Xj) = queue.get()
+            if self.revise(Xi, Xj):
+                if len(self.graph[Xi]) == 0:
+                    return False
+                for Xk in self.graph:
+                    if Xk != Xi and Xk != Xj:
+                        queue.put((Xk, Xi))
+        return True
 
-    # def revise(self, Xi, Xj):
-    #     # print(f"===> Before: {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}")
-    #     revised = False
-    #     for x in set(self.domain[Xi]):  # create a copy of the set
-    #         if not any(xj != xi for xj, xi in zip(sorted(list(self.domain[Xj])), sorted(list(self.domain[Xi])))) and len(self.domain[Xi]) > 1:
-    #             self.domain[Xi].remove(x)
-    #             revised = True
-    #     # print(f"===> After: {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}\n")
+    def revise(self, Xi, Xj):
+        print(f"===> Before: {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}")
+        revised = False
+        for x in set(self.domain[Xi]):  # create a copy of the set
+            if not any(xj != xi for xj, xi in zip(sorted(list(self.domain[Xj])), sorted(list(self.domain[Xi])))) and len(self.domain[Xi]) > 1:
+                self.domain[Xi].remove(x)
+                revised = True
+        # print(f"===> After:  {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}\n")
 
-    #     return revised
+        return revised
 
 
     def backtrack(self, color_map):
