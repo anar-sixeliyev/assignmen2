@@ -88,7 +88,7 @@ class GraphColoringCSP:
         return True
 
     def revise(self, Xi, Xj):
-        print(f"===> Before: {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}")
+        # print(f"===> Before: {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}")
         revised = False
         for x in set(self.domain[Xi]):  # create a copy of the set
             if not any(xj != xi for xj, xi in zip(sorted(list(self.domain[Xj])), sorted(list(self.domain[Xi])))) and len(self.domain[Xi]) > 1:

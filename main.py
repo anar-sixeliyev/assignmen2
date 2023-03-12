@@ -4,13 +4,15 @@ sys.setrecursionlimit(10**6)
 from queue import PriorityQueue
 
 class GraphColoringCSP:
-    
+
+    # initialize the graph with properties and checking validity
     def __init__(self, graph, num_colors):
         self.graph = graph
         self.num_colors = num_colors
         self.domain = {v: set(range(self.num_colors)) for v in self.graph}
         self.checkValid()
-        
+
+    # check if the graph is valid or not
     def checkValid(self):
         for node,nexts in self.graph.items():
             if node in nexts:
@@ -19,6 +21,7 @@ class GraphColoringCSP:
                 if next not in self.graph or node not in self.graph[next]:
                     raise ValueError(f"Node {node} is not properly linked to node {next}.")
 
+    # MRV: get the node with minimum remaining values
     def MRVgetUnassignedArea(self, color_map):
         unassigned = PriorityQueue()
         for v in self.graph:
@@ -26,6 +29,7 @@ class GraphColoringCSP:
                 unassigned.put((len(self.domain[v]), v))
         return unassigned.get()[1]
 
+    # LCV: get the ordered domain values using least constraining value heuristic
     def LCVgetOrderedDomainValues(self, node, color_map):
         domain = self.domain[node]
         if len(domain) == 1:
@@ -33,7 +37,8 @@ class GraphColoringCSP:
         conflicts = [(c, self.countConflicts(node, c, color_map)) for c in domain]
         conflicts.sort(key=lambda x: x[1])
         return [c[0] for c in conflicts]
-
+    
+    # count the conflicts between the given node and its neighbors
     def countConflicts(self, node, color, color_map):
         conflicts = 0
         for neighbor in self.graph[node]:
@@ -41,6 +46,7 @@ class GraphColoringCSP:
                 conflicts += 1
         return conflicts
     
+    # arc consistency
     def AC_3(self, queue=None):
         if queue is None:
             queue = deque((i, j) for i in self.graph for j in self.graph[i])
@@ -54,6 +60,7 @@ class GraphColoringCSP:
                         queue.append((k, i))
         return True
     
+    # remove inconsistent values from the domain of a variable
     def removeInconsistentValues(self, i, j):
         removed = False
         for ci in list(self.domain[i].copy()):
@@ -62,12 +69,14 @@ class GraphColoringCSP:
                 removed = True
         return removed
     
+    # check if a color is valid for a vertex or not
     def isValidColor(self, vertex, color, color_map):
         for neighbor in self.graph[vertex]:
             if color_map.get(neighbor) == color:
                 return False
         return True
 
+    # implement backtrack search algorithm
     def backtrack(self, color_map):
         if len(color_map) == len(self.graph):
             return color_map
@@ -90,14 +99,15 @@ class GraphColoringCSP:
                 
         return None
 
+    #  restore the removed values to the domains of affected nodes
     def undoForwardChecking(self, inferences):
         if(inferences):
             for var, value in inferences:
                 self.domain[var].add(value)
 
-
     def forwardChecking(self, node, value, color_map):
         inferences = []
+        # Check each neighbor of the node and removes the value from its domain if it is not consistent with the color assignment of the node.
         for neighbor in self.graph[node]:
             if neighbor not in color_map:
                 if value in self.domain[neighbor]:
@@ -113,6 +123,7 @@ class GraphColoringCSP:
         color_map = self.backtrack({})
         return color_map
 
+#  read a graph from a file and return it as dictionary
 def read_graph(file_name):
     graph = {}
     with open(file_name, 'r') as file:
@@ -137,6 +148,7 @@ def processFile():
     csp = GraphColoringCSP(graph, num_colors)
     color_map = csp.solve()
     if(color_map):
+        # For readability, sort the color_map before printing because it could be not in inreasing order
         for vertex, color in sorted(color_map.items()):
             print(f"Vertex {vertex} is assigned color {color}")
     else:
