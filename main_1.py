@@ -1,147 +1,152 @@
+import sys
 from collections import deque
+sys.setrecursionlimit(10**6)
+from queue import PriorityQueue
+from queue import Queue
 
 class GraphColoringCSP:
     
     def __init__(self, graph, num_colors):
         self.graph = graph
         self.num_colors = num_colors
+        self.domain = {v: set(range(self.num_colors)) for v in self.graph}
+        self.checkValid()
         
-    def is_valid_color(self, vertex, color, color_map):
-        for neighbor in self.graph[vertex]:
-            if color_map.get(neighbor) == color:
-                return False
-        return True
-    
-    def get_unassigned_var(self, color_map):
-        for vertex in self.graph:
-            if vertex not in color_map:
-                return vertex
-        return None
-    
-    def get_ordered_domain_values(self, var, color_map):
-        domain = set(range(self.num_colors))
-        for neighbor in self.graph[var]:
-            if neighbor in color_map:
-                domain.discard(color_map[neighbor])
-        return sorted(domain, key=lambda c: self.count_conflicts(var, c, color_map))
-    
-    def count_conflicts(self, var, color, color_map):
+    def checkValid(self):
+        for node,nexts in self.graph.items():
+            if node in nexts:
+                raise ValueError(f"Node {node} is linked to itself.")
+            for next in nexts:
+                if next not in self.graph or node not in self.graph[next]:
+                    raise ValueError(f"Node {node} is not properly linked to node {next}.")
+
+    def MRVgetUnassignedArea(self, color_map):
+        unassigned = PriorityQueue()
+        for v in self.graph:
+            if v not in color_map:
+                unassigned.put((len(self.domain[v]), v))
+        return unassigned.get()[1]
+
+    def LCVgetOrderedDomainValues(self, node, color_map):
+        domain = self.domain[node]
+        if len(domain) == 1:
+            return domain
+        conflicts = [(c, self.countConflicts(node, c, color_map)) for c in domain]
+        conflicts.sort(key=lambda x: x[1])
+        return [c[0] for c in conflicts]
+
+    def countConflicts(self, node, color, color_map):
         conflicts = 0
-        for neighbor in self.graph[var]:
+        for neighbor in self.graph[node]:
             if neighbor in color_map and color_map[neighbor] == color:
                 conflicts += 1
         return conflicts
     
-    def ac3(self, queue=None):
+    def AC_3(self, queue=None):
         if queue is None:
             queue = deque((i, j) for i in self.graph for j in self.graph[i])
         while queue:
             i, j = queue.popleft()
-            if self.revise(i, j):
-                print('========>')
-                if not self.graph[i]:
+            if self.removeInconsistentValues(i, j):
+                if not self.domain[i]:
                     return False
                 for k in self.graph[i]:
                     if k != j:
                         queue.append((k, i))
         return True
     
-    def revise(self, i, j):
-        revised = False
+    def removeInconsistentValues(self, i, j):
+        removed = False
         for ci in list(self.domain[i].copy()):
-            if not any(self.is_valid_color(j, cj, {i: ci}) for cj in self.domain[j]):
+            if not any(self.isValidColor(j, cj, {i: ci}) for cj in self.domain[j]):
                 self.domain[i].remove(ci)
-                revised = True
-        return revised
+                removed = True
+        return removed
     
+    def isValidColor(self, vertex, color, color_map):
+        for neighbor in self.graph[vertex]:
+            if color_map.get(neighbor) == color:
+                return False
+        return True
+        
+    # def AC3(self, queue=None):
+    #     if queue is None:
+    #         queue = Queue()
+    #         for Xi in self.graph:
+    #             for Xj in self.graph:
+    #                 if Xj != Xi:
+    #                     queue.put((Xi, Xj))
+
+    #     while not queue.empty():
+    #         (Xi, Xj) = queue.get()
+    #         if self.revise(Xi, Xj):
+    #             if len(self.graph[Xi]) == 0:
+    #                 return False
+    #             for Xk in self.graph:
+    #                 if Xk != Xi and Xk != Xj:
+    #                     queue.put((Xk, Xi))
+    #     return True
+
+    # def revise(self, Xi, Xj):
+    #     # print(f"===> Before: {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}")
+    #     revised = False
+    #     for x in set(self.domain[Xi]):  # create a copy of the set
+    #         if not any(xj != xi for xj, xi in zip(sorted(list(self.domain[Xj])), sorted(list(self.domain[Xi])))) and len(self.domain[Xi]) > 1:
+    #             self.domain[Xi].remove(x)
+    #             revised = True
+    #     # print(f"===> After: {Xi}: {self.domain[Xi]}, {Xj}: {self.domain[Xj]}\n")
+
+    #     return revised
+
+
     def backtrack(self, color_map):
         if len(color_map) == len(self.graph):
             return color_map
-        var = self.get_unassigned_var(color_map)
-        for value in self.get_ordered_domain_values(var, color_map):
-            if self.is_valid_color(var, value, color_map):
-                color_map[var] = value
-                inferences = self.inference(var, value, color_map)
+        
+        node = self.MRVgetUnassignedArea(color_map)
+        ordered_values = self.LCVgetOrderedDomainValues(node, color_map)
+        
+        for value in ordered_values:
+            if self.isValidColor(node, value, color_map):
+                color_map[node] = value
+                
+                inferences = self.forwardChecking(node, value, color_map)
                 if inferences is not None:
                     result = self.backtrack(color_map)
                     if result is not None:
                         return result
-                del color_map[var]
-                self.restore_domain(inferences)
+                    
+                del color_map[node]
+                self.undoForwardChecking(inferences)
+                
         return None
-    
-    def inference(self, var, value, color_map):
+
+    def undoForwardChecking(self, inferences):
+        if(inferences):
+            for var, value in inferences:
+                self.domain[var].add(value)
+
+
+    def forwardChecking(self, node, value, color_map):
         inferences = []
-        for neighbor in self.graph[var]:
+        for neighbor in self.graph[node]:
             if neighbor not in color_map:
-                for color in self.domain[neighbor].copy():
-                    if not self.is_valid_color(neighbor, color, {var: value, neighbor: color}):
-                        self.domain[neighbor].remove(color)
-                        inferences.append((neighbor, color))
+                if value in self.domain[neighbor]:
+                    self.domain[neighbor].remove(value)
+                    inferences.append((neighbor, value))
                 if not self.domain[neighbor]:
+                    # Contradiction detected, need to backtrack
                     return None
         return inferences
     
-    def restore_domain(self, inferences):
-        for var, value in inferences:
-            self.domain[var].add(value)
-            
+    
     def solve(self):
-        self.domain = {v: set(range(self.num_colors)) for v in self.graph}
-        # self.domain = graph
-        self.ac3()
+        # self.AC3()
+        # return None
+        self.AC_3()
         color_map = self.backtrack({})
         return color_map
-        
-# create a graph
-graph = {
-    1: {3},
-    2: {18, 19},
-    3: {1, 19},
-    18: {2},
-    19: {2, 3}
-}
 
-# 1,2
-# 1,3
-# 1,4
-# 1,5
-# 2,3
-# 2,4
-# 2,6
-# 2,7
-# 3,5
-# 3,6
-# 3,7
-# 4,5
-# 4,6
-# 4,7
-# 5,6
-# 5,7
-# 6,7
-# graph = {
-#     1: {2,3,4,5},
-#     2: {1,3,4,6,7},
-#     3: {1,2,5,6,7},
-#     4: {1,2,5,6,7},
-#     5: {1,3,4,6,7},
-#     6: {2,3,4,5,7},
-#     7: {2,3,4,5,6,7},
-# }
-
-# create a CSP solver
-# csp = GraphColoringCSP(graph, num_colors=3)
-
-# solve the problem
-# color_map = csp.solve()
-
-# print the result
-# for vertex, color in color_map.items():
-#     print(f"Vertex {vertex} is assigned color {color}")
-
-# ~~~~~~~~~~~~~
-import sys
-# read file name and seperate to graph and colors
 def read_graph(file_name):
     graph = {}
     with open(file_name, 'r') as file:
@@ -149,7 +154,6 @@ def read_graph(file_name):
             if line.startswith('#'):
                 continue
             if line.startswith('colors') or line.startswith('Colors') :
-                print(line)
                 colors = int(line.split('=')[1].strip())
                 continue
             edge = tuple(sorted(map(int, line.split(','))))
@@ -164,22 +168,12 @@ def processFile():
         return
 
     graph, num_colors = read_graph(sys.argv[1])
-    # print('num_colors', num_colors)
-    print('graph', graph)
     csp = GraphColoringCSP(graph, num_colors)
     color_map = csp.solve()
-    print('color_map', color_map)
-    for vertex, color in color_map.items():
-        print(f"Vertex {vertex} is assigned color {color}")
-    # color_map = color_graph(graph, num_colors)
+    if(color_map):
+        for vertex, color in sorted(color_map.items()):
+            print(f"Vertex {vertex} is assigned color {color}")
+    else:
+        print('\tIt is not possible to color this Graph')
 
 processFile()
-
-
-
-# use this
-def check_valid(graph):
-    for node,nexts in graph.items():
-        assert(node not in nexts) # # no node linked to itself
-        for next in nexts:
-            assert(next in graph and node in graph[next]) # A linked to B implies B linked to A
