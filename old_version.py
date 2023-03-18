@@ -53,7 +53,6 @@ class GraphColoringCSP:
         while queue:
             i, j = queue.popleft()
             if self.removeInconsistentValues(i, j):
-                # print('inside')
                 if not self.domain[i]:
                     return False
                 for k in self.graph[i]:
@@ -63,15 +62,11 @@ class GraphColoringCSP:
     
     # remove inconsistent values from the domain of a variable
     def removeInconsistentValues(self, i, j):
-        # print(f"===> Before: {i}: {self.domain[i]}, {j}: {self.domain[j]}")
-
         removed = False
         for ci in list(self.domain[i].copy()):
             if not any(self.isValidColor(j, cj, {i: ci}) for cj in self.domain[j]):
                 self.domain[i].remove(ci)
                 removed = True
-        # print(f"===> After : {i}: {self.domain[i]}, {j}: {self.domain[j]}")
-        
         return removed
     
     # check if a color is valid for a vertex or not
@@ -86,18 +81,19 @@ class GraphColoringCSP:
         if len(color_map) == len(self.graph):
             return color_map
         
-        self.AC_3()
         node = self.MRVgetUnassignedArea(color_map)
         ordered_values = self.LCVgetOrderedDomainValues(node, color_map)
         
         for value in ordered_values:
-            if value in self.domain[node]:
+            if self.isValidColor(node, value, color_map):
                 color_map[node] = value
+                
                 inferences = self.forwardChecking(node, value, color_map)
                 if inferences is not None:
                     result = self.backtrack(color_map)
                     if result is not None:
                         return result
+                    
                 del color_map[node]
                 self.undoForwardChecking(inferences)
                 
